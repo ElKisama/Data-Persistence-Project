@@ -1,24 +1,43 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 
 public class MainManager : MonoBehaviour
 {
+    
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text bestScoreText;
     public GameObject GameOverText;
-    
+    public GameObject exitButton;
+
     private bool m_Started = false;
     private int m_Points;
-    
     private bool m_GameOver = false;
 
+    public string bestPlayerName;
+    public int bestPlayerScore;
     
+
+    private void Awake()
+    {
+        ScoreManager.Instance.LoadHighScoreData();
+        bestPlayerName = ScoreManager.Instance.bestPlayerName;
+        bestPlayerScore = ScoreManager.Instance.bestPlayerScore;
+
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -36,6 +55,7 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+        SetHighScoreText();
     }
 
     private void Update()
@@ -72,5 +92,38 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        exitButton.SetActive(true);
+        
+        CheckNewHighScore(m_Points);
+    }
+
+    void CheckNewHighScore(int actualScore)
+    {
+        if (actualScore > bestPlayerScore)
+        {
+            bestPlayerName = ScoreManager.Instance.currentPlayerName;
+            bestPlayerScore = actualScore;
+            
+            bestScoreText.text = $"Best Score - {bestPlayerName}: {bestPlayerScore}";
+            ScoreManager.Instance.SaveHighScoreData(bestPlayerName, bestPlayerScore);
+        }
+    }
+
+    void SetHighScoreText()
+    {
+        if (bestPlayerName == null && bestPlayerScore == 0)
+        {
+            bestScoreText.text = "";
+        }
+        bestScoreText.text = $"Best Score - {bestPlayerName}: {bestPlayerScore}";
+    }
+    
+    public void Exit()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit();
+#endif
     }
 }
